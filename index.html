@@ -1,55 +1,72 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Cardboard Mania</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
-      font-family: Arial, sans-serif;
-      background: #f4f4f4;
-      padding: 20px;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #121212;
+      color: #f4f4f4;
       margin: 0;
+      padding: 20px;
     }
     h1 {
-      color: #333;
+      text-align: center;
+      color: #00ff88;
     }
-    .form input, .form button {
-      margin: 5px 0;
-      padding: 8px;
+    .container {
+      max-width: 600px;
+      margin: auto;
+    }
+    input, button {
       width: 100%;
-      max-width: 300px;
-      display: block;
-    }
-    .form button {
-      background: #333;
-      color: white;
+      padding: 10px;
+      margin: 8px 0;
+      border-radius: 6px;
       border: none;
+      font-size: 16px;
+    }
+    input {
+      background: #1e1e1e;
+      color: white;
+    }
+    button {
+      background: #00ff88;
+      color: black;
+      font-weight: bold;
       cursor: pointer;
     }
+    button:hover {
+      background: #00cc6a;
+    }
     .card {
-      background: white;
-      padding: 10px;
-      margin-top: 10px;
-      border-radius: 6px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      background: #1e1e1e;
+      padding: 12px;
+      margin-top: 12px;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    }
+    .scan-btn {
+      background: #007aff;
+      color: white;
     }
   </style>
 </head>
 <body>
   <h1>Cardboard Mania</h1>
-
-  <div class="form">
-    <input type="text" id="folder" placeholder="Folder (e.g. NBA)">
-    <input type="text" id="cardName" placeholder="Card Name">
-    <input type="text" id="cardType" placeholder="Type (e.g. TCG)">
-    <input type="text" id="condition" placeholder="Condition">
-    <input type="number" id="purchasePrice" placeholder="Purchase Price">
-    <input type="text" id="ebaySearch" placeholder="eBay Search Term">
+  <div class="container">
+    <input type="text" id="folder" placeholder="Folder (e.g. NBA)" />
+    <input type="text" id="cardName" placeholder="Card Name" />
+    <input type="text" id="cardType" placeholder="Type (e.g. TCG)" />
+    <input type="text" id="condition" placeholder="Condition" />
+    <input type="number" id="purchasePrice" placeholder="Purchase Price" />
+    <input type="text" id="ebaySearch" placeholder="eBay Search Term" />
     <button onclick="addCard()">Add Card</button>
+    <button class="scan-btn" onclick="scanCard()">📷 Scan Card (BETA)</button>
+    <div id="cardList"></div>
   </div>
-
-  <div id="cardList"></div>
 
   <script>
     const cards = [];
@@ -75,15 +92,4 @@
         const div = document.createElement('div');
         div.className = 'card';
         div.innerHTML = `
-          <strong>${card.name}</strong> (${card.type})<br>
-          Folder: ${card.folder}<br>
-          Condition: ${card.condition}<br>
-          Purchase Price: $${card.price}<br>
-          <a href="${card.ebayLink}" target="_blank">Check Price on eBay</a>
-        `;
-        list.appendChild(div);
-      });
-    }
-  </script>
-</body>
-</html>
+          <strong>${card.name}
