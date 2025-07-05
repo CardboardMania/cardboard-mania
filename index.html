@@ -3,63 +3,33 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Cardboard Mania - Scan OCR</title>
+  <title>Cardboard Mania</title>
   <style>
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      font-family: 'Segoe UI', sans-serif;
       background: #121212;
       color: #f4f4f4;
       margin: 0;
       padding: 20px;
     }
-    h1 {
-      text-align: center;
-      color: #00ff88;
-    }
-    .container {
-      max-width: 600px;
-      margin: auto;
-    }
+    h1 { text-align: center; color: #00ff88; }
+    .container { max-width: 600px; margin: auto; }
     input, button {
-      width: 100%;
-      padding: 10px;
-      margin: 8px 0;
-      border-radius: 6px;
-      border: none;
-      font-size: 16px;
+      width: 100%; padding: 10px; margin: 8px 0;
+      border-radius: 6px; border: none; font-size: 16px;
     }
-    input {
-      background: #1e1e1e;
-      color: white;
-    }
+    input { background: #1e1e1e; color: white; }
     button {
-      background: #00ff88;
-      color: black;
-      font-weight: bold;
-      cursor: pointer;
+      background: #00ff88; color: black; font-weight: bold; cursor: pointer;
     }
-    button:hover {
-      background: #00cc6a;
-    }
+    button:hover { background: #00cc6a; }
     .card {
-      background: #1e1e1e;
-      padding: 12px;
-      margin-top: 12px;
-      border-radius: 8px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+      background: #1e1e1e; padding: 12px; margin-top: 12px;
+      border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.3);
     }
-    .scan-btn {
-      background: #007aff;
-      color: white;
-    }
-    #video {
-      width: 100%;
-      border-radius: 8px;
-      margin-top: 10px;
-      display: none;
-    }
-    #canvas {
-      display: none;
+    .scan-btn { background: #007aff; color: white; }
+    .filter-btn {
+      background: #333; color: #fff; margin: 4px 2px; border-radius: 4px;
     }
   </style>
 </head>
@@ -73,13 +43,89 @@
     <input type="number" id="purchasePrice" placeholder="Purchase Price" />
     <input type="text" id="ebaySearch" placeholder="eBay Search Term" />
     <button onclick="addCard()">Add Card</button>
-    <button class="scan-btn" onclick="startScan()">📷 Scan Card (BETA)</button>
-    <video id="video" autoplay></video>
-    <canvas id="canvas"></canvas>
+    <button class="scan-btn" onclick="alert('📷 Scan feature coming soon!')">📷 Scan Card</button>
+    <div id="filters"></div>
     <div id="cardList"></div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.0.2/dist/tesseract.min.js"></script>
   <script>
-    const cards = [];
-    cons
+    const cardList = document.getElementById('cardList');
+    const filtersDiv = document.getElementById('filters');
+
+    function getCards() {
+      return JSON.parse(localStorage.getItem('cards') || '[]');
+    }
+
+    function saveCards(cards) {
+      localStorage.setItem('cards', JSON.stringify(cards));
+    }
+
+    function addCard() {
+      const folder = document.getElementById('folder').value;
+      const name = document.getElementById('cardName').value;
+      const type = document.getElementById('cardType').value;
+      const condition = document.getElementById('condition').value;
+      const price = parseFloat(document.getElementById('purchasePrice').value || 0);
+      const ebaySearch = document.getElementById('ebaySearch').value;
+      const ebayLink = "https://www.ebay.com/sch/i.html?_nkw=" + encodeURIComponent(ebaySearch);
+
+      const cards = getCards();
+      cards.push({ folder, name, type, condition, price, ebayLink });
+      saveCards(cards);
+      renderCards(cards);
+      renderFilters(cards);
+
+      // Reset form (keep folder)
+      document.getElementById('cardName').value = '';
+      document.getElementById('cardType').value = '';
+      document.getElementById('condition').value = '';
+      document.getElementById('purchasePrice').value = '';
+      document.getElementById('ebaySearch').value = '';
+    }
+
+    function renderCards(cards, filter = '') {
+      cardList.innerHTML = '';
+      let total = 0;
+      cards.filter(card => !filter || card.folder === filter).forEach(card => {
+        total += card.price;
+        const div = document.createElement('div');
+        div.className = 'card';
+        div.innerHTML = `
+          <strong>${card.name}</strong> (${card.type})<br />
+          Folder: ${card.folder}<br />
+          Condition: ${card.condition}<br />
+          Purchase Price: $${card.price.toFixed(2)}<br />
+          <a href="${card.ebayLink}" target="_blank" style="color:#00ff88;">Check Price on eBay</a>
+        `;
+        cardList.appendChild(div);
+      });
+
+      const totalDiv = document.createElement('div');
+      totalDiv.className = 'card';
+      totalDiv.innerHTML = `<strong>Total Value: $${total.toFixed(2)}</strong>`;
+      cardList.appendChild(totalDiv);
+    }
+
+    function renderFilters(cards) {
+      const folders = [...new Set(cards.map(c => c.folder))];
+      filtersDiv.innerHTML = '<strong>Filter:</strong> ';
+      folders.forEach(folder => {
+        const btn = document.createElement('button');
+        btn.className = 'filter-btn';
+        btn.innerText = folder;
+        btn.onclick = () => renderCards(cards, folder);
+        filtersDiv.appendChild(btn);
+      });
+      const allBtn = document.createElement('button');
+      allBtn.className = 'filter-btn';
+      allBtn.innerText = 'All';
+      allBtn.onclick = () => renderCards(cards);
+      filtersDiv.appendChild(allBtn);
+    }
+
+    const initialCards = getCards();
+    renderCards(initialCards);
+    renderFilters(initialCards);
+  </script>
+</body>
+</html>
