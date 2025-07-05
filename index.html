@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Cardboard Mania</title>
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.0.2/dist/tesseract.min.js"></script>
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
@@ -14,7 +13,7 @@
     }
     h1 { text-align: center; color: #00ff88; }
     .container { max-width: 600px; margin: auto; }
-    input, button, textarea {
+    input, button {
       width: 100%; padding: 10px; margin: 8px 0;
       border-radius: 6px; border: none; font-size: 16px;
       background: #1e1e1e; color: white;
@@ -42,12 +41,6 @@
       border-radius: 8px;
       margin-top: 10px;
     }
-    #ocrResultBox {
-      height: 100px;
-      background: #333;
-      white-space: pre-wrap;
-      overflow-y: auto;
-    }
   </style>
 </head>
 <body>
@@ -64,8 +57,6 @@
   <img id="preview" />
   <button onclick="document.getElementById('scannerInput').click()">📷 Scan Card</button>
   <input type="file" accept="image/*" capture="environment" id="scannerInput" style="display:none" onchange="handleScan(this)" />
-  <textarea id="ocrResultBox" placeholder="OCR result will appear here..."></textarea>
-  <button onclick="autoFillFromOCR()">Auto-fill from OCR</button>
   <div id="cardList"></div>
 </div>
 
@@ -80,20 +71,8 @@ function handleScan(input) {
     scannedImage = e.target.result;
     document.getElementById('preview').src = scannedImage;
     document.getElementById('preview').style.display = 'block';
-    Tesseract.recognize(scannedImage, 'eng').then(({ data: { text } }) => {
-      document.getElementById('ocrResultBox').value = text;
-    });
   };
   reader.readAsDataURL(file);
-}
-
-function autoFillFromOCR() {
-  const text = document.getElementById('ocrResultBox').value;
-  const lines = text.split('\n').map(l => l.trim()).filter(l => l);
-  document.getElementById('cardName').value = lines[0] || '';
-  document.getElementById('cardType').value = lines[1] || '';
-  document.getElementById('condition').value = lines[2] || '';
-  document.getElementById('ebaySearch').value = lines[0] || '';
 }
 
 function addCard() {
@@ -131,18 +110,30 @@ function saveCard(card) {
 
 function renderCards() {
   const cards = JSON.parse(localStorage.getItem('cards') || '[]');
+  const grouped = cards.reduce((acc, card) => {
+    if (!acc[card.folder]) acc[card.folder] = [];
+    acc[card.folder].push(card);
+    return acc;
+  }, {});
+
   const list = document.getElementById('cardList');
   list.innerHTML = '';
-  cards.forEach((c, i) => {
-    const div = document.createElement('div');
-    div.className = 'card';
-    div.innerHTML = `
-      <strong>${c.name}</strong><br>${c.type}<br>${c.condition}<br>$${c.price.toFixed(2)}<br>
-      <a href="${c.ebay}" target="_blank">eBay</a><br>
-      ${c.image ? `<img src="${c.image}" />` : ''}
-      <button onclick="deleteCard(${i})">Delete</button>`;
-    list.appendChild(div);
-  });
+
+  for (const folder in grouped) {
+    const section = document.createElement('div');
+    section.innerHTML = `<h2>${folder}</h2>`;
+    grouped[folder].forEach((c, i) => {
+      const div = document.createElement('div');
+      div.className = 'card';
+      div.innerHTML = `
+        <strong>${c.name}</strong><br>${c.type}<br>${c.condition}<br>$${c.price.toFixed(2)}<br>
+        <a href="${c.ebay}" target="_blank">eBay</a><br>
+        ${c.image ? `<img src="${c.image}" />` : ''}
+        <button onclick="deleteCard(${i})">Delete</button>`;
+      section.appendChild(div);
+    });
+    list.appendChild(section);
+  }
 }
 
 function deleteCard(index) {
@@ -161,7 +152,6 @@ function clearForm() {
   document.getElementById('ebaySearch').value = '';
   document.getElementById('cardImage').value = '';
   document.getElementById('preview').style.display = 'none';
-  document.getElementById('ocrResultBox').value = '';
   scannedImage = null;
 }
 
