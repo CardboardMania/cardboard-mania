@@ -222,9 +222,20 @@
             'eng',
             { logger: m => console.log(m) }
           ).then(({ data: { text } }) => {
-            const line = text.split("\n").find(line => line.trim().length > 3);
-            document.getElementById("cardName").value = line?.trim() || "Scanned Card";
-            alert("✅ Text scanned: " + (line?.trim() || "unknown"));
+            const lines = text.split("\n").map(l => l.trim()).filter(l => l.length > 0);
+            const name = lines.find(line => /[A-Za-z]{2,}/.test(line)) || "Scanned Card";
+            const type = lines.find(line => /NBA|TCG|Pokémon|Yu-Gi-Oh|Panini|Topps/i.test(line)) || "";
+            const condition = lines.find(line => /Mint|Near Mint|Used|Good|PSA/i.test(line)) || "";
+            const priceMatch = lines.join(" ").match(/[$]?(\d+\.\d{2})/);
+            const price = priceMatch ? parseFloat(priceMatch[1]) : '';
+
+            document.getElementById("cardName").value = name;
+            document.getElementById("cardType").value = type;
+            document.getElementById("condition").value = condition;
+            document.getElementById("purchasePrice").value = price;
+            document.getElementById("ebaySearch").value = name + " " + type;
+
+            alert("✅ Scan complete. Fields auto-filled.");
           });
         };
         reader.readAsDataURL(file);
