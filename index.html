@@ -18,6 +18,9 @@
       width: 100%; padding: 10px; margin: 8px 0;
       border-radius: 6px; border: none; font-size: 16px;
     }
+    input[type="file"] {
+      padding: 4px;
+    }
     input { background: #1e1e1e; color: white; }
     button {
       background: #00ff88; color: black; font-weight: bold; cursor: pointer;
@@ -26,10 +29,36 @@
     .card {
       background: #1e1e1e; padding: 12px; margin-top: 12px;
       border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+      position: relative;
+    }
+    .card img {
+      width: 100%;
+      max-height: 200px;
+      object-fit: contain;
+      border-radius: 6px;
+      margin-top: 10px;
     }
     .scan-btn { background: #007aff; color: white; }
     .filter-btn {
       background: #333; color: #fff; margin: 4px 2px; border-radius: 4px;
+    }
+    .remove-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: #ff4444;
+      color: white;
+      border: none;
+      padding: 4px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .remove-btn:hover {
+      background: #dd0000;
+    }
+    .clear-btn {
+      background: #ff4444;
+      margin-top: 10px;
     }
   </style>
 </head>
@@ -42,8 +71,10 @@
     <input type="text" id="condition" placeholder="Condition" />
     <input type="number" id="purchasePrice" placeholder="Purchase Price" />
     <input type="text" id="ebaySearch" placeholder="eBay Search Term" />
+    <input type="file" id="cardImage" accept="image/*" />
     <button onclick="addCard()">Add Card</button>
-    <button class="scan-btn" onclick="alert('📷 Scan feature coming soon!')">📷 Scan Card</button>
+    <button class="scan-btn" onclick="alert('📷 Scan coming soon!')">📷 Scan Card</button>
+    <button class="clear-btn" onclick="clearAll()">🗑️ Clear All Cards</button>
     <div id="filters"></div>
     <div id="cardList"></div>
   </div>
@@ -68,34 +99,54 @@
       const price = parseFloat(document.getElementById('purchasePrice').value || 0);
       const ebaySearch = document.getElementById('ebaySearch').value;
       const ebayLink = "https://www.ebay.com/sch/i.html?_nkw=" + encodeURIComponent(ebaySearch);
+      const imageInput = document.getElementById('cardImage');
+      const file = imageInput.files[0];
 
+      if (file) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const image = reader.result;
+          saveCardData({ folder, name, type, condition, price, ebayLink, image });
+        };
+        reader.readAsDataURL(file);
+      } else {
+        saveCardData({ folder, name, type, condition, price, ebayLink, image: null });
+      }
+    }
+
+    function saveCardData(card) {
       const cards = getCards();
-      cards.push({ folder, name, type, condition, price, ebayLink });
+      cards.push(card);
       saveCards(cards);
       renderCards(cards);
       renderFilters(cards);
+      clearForm();
+    }
 
-      // Reset form (keep folder)
+    function clearForm() {
       document.getElementById('cardName').value = '';
       document.getElementById('cardType').value = '';
       document.getElementById('condition').value = '';
       document.getElementById('purchasePrice').value = '';
       document.getElementById('ebaySearch').value = '';
+      document.getElementById('cardImage').value = '';
     }
 
     function renderCards(cards, filter = '') {
       cardList.innerHTML = '';
       let total = 0;
-      cards.filter(card => !filter || card.folder === filter).forEach(card => {
+      cards.filter(card => !filter || card.folder === filter).forEach((card, index) => {
         total += card.price;
         const div = document.createElement('div');
         div.className = 'card';
         div.innerHTML = `
+          <button class="remove-btn" onclick="removeCard(${index})">✖</button>
           <strong>${card.name}</strong> (${card.type})<br />
           Folder: ${card.folder}<br />
           Condition: ${card.condition}<br />
           Purchase Price: $${card.price.toFixed(2)}<br />
           <a href="${card.ebayLink}" target="_blank" style="color:#00ff88;">Check Price on eBay</a>
+          ${card.image ? `<img src="${card.image}" alt="Card Image" />` : ''}
         `;
         cardList.appendChild(div);
       });
@@ -123,6 +174,23 @@
       filtersDiv.appendChild(allBtn);
     }
 
+    function removeCard(index) {
+      const cards = getCards();
+      cards.splice(index, 1);
+      saveCards(cards);
+      renderCards(cards);
+      renderFilters(cards);
+    }
+
+    function clearAll() {
+      if (confirm("Are you sure you want to remove all cards?")) {
+        localStorage.removeItem('cards');
+        renderCards([]);
+        filtersDiv.innerHTML = '';
+      }
+    }
+
+    // Init
     const initialCards = getCards();
     renderCards(initialCards);
     renderFilters(initialCards);
