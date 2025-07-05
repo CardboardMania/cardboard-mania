@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Cardboard Mania</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      padding: 20px;
+      margin: 0;
+    }
+    h1 {
+      color: #333;
+    }
+    .form input, .form button {
+      margin: 5px 0;
+      padding: 8px;
+      width: 100%;
+      max-width: 300px;
+      display: block;
+    }
+    .form button {
+      background: #333;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    .card {
+      background: white;
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 6px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+  </style>
+</head>
+<body>
+  <h1>Cardboard Mania</h1>
+
+  <div class="form">
+    <input type="text" id="folder" placeholder="Folder (e.g. NBA)">
+    <input type="text" id="cardName" placeholder="Card Name">
+    <input type="text" id="cardType" placeholder="Type (e.g. TCG)">
+    <input type="text" id="condition" placeholder="Condition">
+    <input type="number" id="purchasePrice" placeholder="Purchase Price">
+    <input type="text" id="ebaySearch" placeholder="eBay Search Term">
+    <button onclick="addCard()">Add Card</button>
+  </div>
+
+  <div id="cardList"></div>
+
+  <script>
+    const cards = [];
+
+    function addCard() {
+      const folder = document.getElementById('folder').value;
+      const name = document.getElementById('cardName').value;
+      const type = document.getElementById('cardType').value;
+      const condition = document.getElementById('condition').value;
+      const price = document.getElementById('purchasePrice').value;
+      const ebaySearch = document.getElementById('ebaySearch').value;
+      const ebayLink = `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(ebaySearch)}`;
+
+      const card = { folder, name, type, condition, price, ebayLink };
+      cards.push(card);
+      renderCards();
+    }
+
+    function renderCards() {
+      const list = document.getElementById('cardList');
+      list.innerHTML = '';
+      cards.forEach(card => {
+        const div = document.createElement('div');
+        div.className = 'card';
+        div.innerHTML = `
+          <strong>${card.name}</strong> (${card.type})<br>
+          Folder: ${card.folder}<br>
+          Condition: ${card.condition}<br>
+          Purchase Price: $${card.price}<br>
+          <a href="${card.ebayLink}" target="_blank">Check Price on eBay</a>
+        `;
+        list.appendChild(div);
+      });
+    }
+  </script>
+</body>
+</html>
