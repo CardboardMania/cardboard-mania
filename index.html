@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Cardboard Mania</title>
+  <title>Cardboard Mania - Scan OCR</title>
   <style>
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -52,6 +52,15 @@
       background: #007aff;
       color: white;
     }
+    #video {
+      width: 100%;
+      border-radius: 8px;
+      margin-top: 10px;
+      display: none;
+    }
+    #canvas {
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -64,32 +73,13 @@
     <input type="number" id="purchasePrice" placeholder="Purchase Price" />
     <input type="text" id="ebaySearch" placeholder="eBay Search Term" />
     <button onclick="addCard()">Add Card</button>
-    <button class="scan-btn" onclick="scanCard()">📷 Scan Card (BETA)</button>
+    <button class="scan-btn" onclick="startScan()">📷 Scan Card (BETA)</button>
+    <video id="video" autoplay></video>
+    <canvas id="canvas"></canvas>
     <div id="cardList"></div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.0.2/dist/tesseract.min.js"></script>
   <script>
     const cards = [];
-
-    function addCard() {
-      const folder = document.getElementById('folder').value;
-      const name = document.getElementById('cardName').value;
-      const type = document.getElementById('cardType').value;
-      const condition = document.getElementById('condition').value;
-      const price = document.getElementById('purchasePrice').value;
-      const ebaySearch = document.getElementById('ebaySearch').value;
-      const ebayLink = `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(ebaySearch)}`;
-
-      const card = { folder, name, type, condition, price, ebayLink };
-      cards.push(card);
-      renderCards();
-    }
-
-    function renderCards() {
-      const list = document.getElementById('cardList');
-      list.innerHTML = '';
-      cards.forEach(card => {
-        const div = document.createElement('div');
-        div.className = 'card';
-        div.innerHTML = `
-          <strong>${card.name}
+    cons
