@@ -1,86 +1,54 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Cardboard Mania - Improved Scan & Image Save</title>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.0.2/dist/tesseract.min.js"></script>
-<style>
-  body {
-    font-family: 'Segoe UI', sans-serif;
-    background: #121212;
-    color: #f4f4f4;
-    margin: 0; padding: 20px;
-  }
-  h1 { text-align: center; color: #00ff88; }
-  .container { max-width: 600px; margin: auto; }
-  input, button, textarea {
-    width: 100%; padding: 10px; margin: 8px 0;
-    border-radius: 6px; border: none; font-size: 16px;
-    background: #1e1e1e; color: white;
-  }
-  button {
-    background: #00ff88; color: black; font-weight: bold; cursor: pointer;
-  }
-  button:hover { background: #00cc6a; }
-  .card {
-    background: #1e1e1e;
-    padding: 12px;
-    margin-top: 12px;
-    border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-    position: relative;
-  }
-  .card img {
-    width: 100%;
-    max-height: 200px;
-    object-fit: contain;
-    border-radius: 6px;
-    margin-top: 10px;
-  }
-  #preview {
-    display: none;
-    max-width: 100%;
-    max-height: 200px;
-    border-radius: 8px;
-    margin-top: 10px;
-  }
-  #ocrResultBox {
-    height: 100px;
-    font-family: monospace;
-    background: #333;
-    margin-bottom: 10px;
-    white-space: pre-wrap;
-    overflow-y: auto;
-  }
-  .filter-btn {
-    background: #333;
-    color: #fff;
-    margin: 4px 2px;
-    border-radius: 4px;
-    padding: 8px;
-    border: none;
-    cursor: pointer;
-  }
-  .clear-btn {
-    background: #ff4444;
-    margin-top: 10px;
-    cursor: pointer;
-  }
-  .remove-btn-bottom {
-    background: #ff4444;
-    color: white;
-    border: none;
-    padding: 8px 12px;
-    border-radius: 4px;
-    margin-top: 10px;
-    cursor: pointer;
-    width: 100%;
-  }
-  .remove-btn-bottom:hover {
-    background: #dd0000;
-  }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cardboard Mania</title>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.0.2/dist/tesseract.min.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #121212;
+      color: #f4f4f4;
+      margin: 0; padding: 20px;
+    }
+    h1 { text-align: center; color: #00ff88; }
+    .container { max-width: 600px; margin: auto; }
+    input, button, textarea {
+      width: 100%; padding: 10px; margin: 8px 0;
+      border-radius: 6px; border: none; font-size: 16px;
+      background: #1e1e1e; color: white;
+    }
+    button {
+      background: #00ff88; color: black; font-weight: bold; cursor: pointer;
+    }
+    .card {
+      background: #1e1e1e;
+      padding: 12px;
+      margin-top: 12px;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    }
+    .card img {
+      width: 100%;
+      max-height: 200px;
+      object-fit: contain;
+      border-radius: 6px;
+    }
+    #preview {
+      display: none;
+      max-width: 100%;
+      max-height: 200px;
+      border-radius: 8px;
+      margin-top: 10px;
+    }
+    #ocrResultBox {
+      height: 100px;
+      background: #333;
+      white-space: pre-wrap;
+      overflow-y: auto;
+    }
+  </style>
 </head>
 <body>
 <h1>Cardboard Mania</h1>
@@ -93,236 +61,111 @@
   <input type="text" id="ebaySearch" placeholder="eBay Search Term" />
   <input type="file" id="cardImage" accept="image/*" />
   <button onclick="addCard()">Add Card</button>
-
   <img id="preview" />
-  <button onclick="startScan()">📷 Scan Card</button>
-  <button class="clear-btn" onclick="clearAll()">🗑️ Clear All Cards</button>
-
+  <button onclick="document.getElementById('scannerInput').click()">📷 Scan Card</button>
   <input type="file" accept="image/*" capture="environment" id="scannerInput" style="display:none" onchange="handleScan(this)" />
-
-  <h3>OCR Text (edit before saving):</h3>
-  <textarea id="ocrResultBox"></textarea>
-  <button onclick="autoFillFromOCR()">Auto-fill fields from OCR text</button>
-
-  <div id="filters"></div>
+  <textarea id="ocrResultBox" placeholder="OCR result will appear here..."></textarea>
+  <button onclick="autoFillFromOCR()">Auto-fill from OCR</button>
   <div id="cardList"></div>
 </div>
 
 <script>
-  const cardList = document.getElementById('cardList');
-  const filtersDiv = document.getElementById('filters');
-  const previewImg = document.getElementById('preview');
-  const ocrResultBox = document.getElementById('ocrResultBox');
+let scannedImage = null;
 
-  // Global to hold scanned image data URL
-  let scannedImageDataURL = null;
-
-  function getCards() {
-    return JSON.parse(localStorage.getItem('cards') || '[]');
-  }
-
-  function saveCards(cards) {
-    localStorage.setItem('cards', JSON.stringify(cards));
-  }
-
-  function addCard() {
-    const folder = document.getElementById('folder').value;
-    const name = document.getElementById('cardName').value;
-    const type = document.getElementById('cardType').value;
-    const condition = document.getElementById('condition').value;
-    const price = parseFloat(document.getElementById('purchasePrice').value || 0);
-    const ebaySearch = document.getElementById('ebaySearch').value;
-    const ebayLink = "https://www.ebay.com/sch/i.html?_nkw=" + encodeURIComponent(ebaySearch);
-    const imageInput = document.getElementById('cardImage');
-    const file = imageInput.files[0];
-
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const image = reader.result;
-        saveCardData({ folder, name, type, condition, price, ebayLink, image });
-      };
-      reader.readAsDataURL(file);
-    } else if (scannedImageDataURL) {
-      // Use scanned image data if no manual upload
-      saveCardData({ folder, name, type, condition, price, ebayLink, image: scannedImageDataURL });
-    } else {
-      saveCardData({ folder, name, type, condition, price, ebayLink, image: null });
-    }
-  }
-
-  function saveCardData(card) {
-    const cards = getCards();
-    cards.push(card);
-    saveCards(cards);
-    renderCards(cards);
-    renderFilters(cards);
-    clearForm();
-    clearOCR();
-  }
-
-  function clearForm() {
-    document.getElementById('cardName').value = '';
-    document.getElementById('cardType').value = '';
-    document.getElementById('condition').value = '';
-    document.getElementById('purchasePrice').value = '';
-    document.getElementById('ebaySearch').value = '';
-    document.getElementById('cardImage').value = '';
-    scannedImageDataURL = null;
-    previewImg.style.display = 'none';
-  }
-
-  function renderCards(cards, filter = '') {
-    cardList.innerHTML = '';
-    let total = 0;
-    cards.filter(card => !filter || card.folder === filter).forEach((card, index) => {
-      total += card.price;
-      const div = document.createElement('div');
-      div.className = 'card';
-      div.innerHTML = `
-        <strong>${card.name}</strong> (${card.type})<br />
-        Folder: ${card.folder}<br />
-        Condition: ${card.condition}<br />
-        Purchase Price: $${card.price.toFixed(2)}<br />
-        <a href="${card.ebayLink}" target="_blank" style="color:#00ff88;">Check Price on eBay</a>
-        ${card.image ? `<img src="${card.image}" alt="Card Image" />` : ''}
-        <button class="remove-btn-bottom" onclick="removeCard(${index})">Remove Card</button>
-      `;
-      cardList.appendChild(div);
+function handleScan(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    scannedImage = e.target.result;
+    document.getElementById('preview').src = scannedImage;
+    document.getElementById('preview').style.display = 'block';
+    Tesseract.recognize(scannedImage, 'eng').then(({ data: { text } }) => {
+      document.getElementById('ocrResultBox').value = text;
     });
+  };
+  reader.readAsDataURL(file);
+}
 
-    const totalDiv = document.createElement('div');
-    totalDiv.className = 'card';
-    totalDiv.innerHTML = `<strong>Total Value: $${total.toFixed(2)}</strong>`;
-    cardList.appendChild(totalDiv);
-  }
+function autoFillFromOCR() {
+  const text = document.getElementById('ocrResultBox').value;
+  const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+  document.getElementById('cardName').value = lines[0] || '';
+  document.getElementById('cardType').value = lines[1] || '';
+  document.getElementById('condition').value = lines[2] || '';
+  document.getElementById('ebaySearch').value = lines[0] || '';
+}
 
-  function renderFilters(cards) {
-    const folders = [...new Set(cards.map(c => c.folder))];
-    filtersDiv.innerHTML = '<strong>Filter:</strong> ';
-    folders.forEach(folder => {
-      const btn = document.createElement('button');
-      btn.className = 'filter-btn';
-      btn.innerText = folder;
-      btn.onclick = () => renderCards(cards, folder);
-      filtersDiv.appendChild(btn);
-    });
-    const allBtn = document.createElement('button');
-    allBtn.className = 'filter-btn';
-    allBtn.innerText = 'All';
-    allBtn.onclick = () => renderCards(cards);
-    filtersDiv.appendChild(allBtn);
-  }
+function addCard() {
+  const imageInput = document.getElementById('cardImage');
+  const file = imageInput.files[0];
+  const card = {
+    folder: document.getElementById('folder').value,
+    name: document.getElementById('cardName').value,
+    type: document.getElementById('cardType').value,
+    condition: document.getElementById('condition').value,
+    price: parseFloat(document.getElementById('purchasePrice').value) || 0,
+    ebay: 'https://www.ebay.com/sch/i.html?_nkw=' + encodeURIComponent(document.getElementById('ebaySearch').value),
+    image: scannedImage || null
+  };
 
-  function removeCard(index) {
-    const cards = getCards();
-    cards.splice(index, 1);
-    saveCards(cards);
-    renderCards(cards);
-    renderFilters(cards);
-  }
-
-  function clearAll() {
-    if (confirm("Are you sure you want to remove all cards?")) {
-      localStorage.removeItem('cards');
-      renderCards([]);
-      filtersDiv.innerHTML = '';
-    }
-  }
-
-  function startScan() {
-    document.getElementById("scannerInput").click();
-  }
-
-  function handleScan(input) {
-    const file = input.files[0];
-    if (!file) return;
+  if (file) {
     const reader = new FileReader();
     reader.onload = function(e) {
-      previewImg.src = e.target.result;
-      previewImg.style.display = "block";
-
-      // Save scanned image data url for later add
-      scannedImageDataURL = e.target.result;
-
-      processImageForOCR(e.target.result).then(preprocessed => {
-        Tesseract.recognize(
-          preprocessed,
-          'eng',
-          { logger: m => console.log(m) }
-        ).then(({ data: { text } }) => {
-          ocrResultBox.value = text.trim();
-          alert("✅ OCR done! Review/edit text below, then click 'Auto-fill fields from OCR text'.");
-        });
-      });
+      card.image = e.target.result;
+      saveCard(card);
     };
     reader.readAsDataURL(file);
+  } else {
+    saveCard(card);
   }
+}
 
-  // Resize & grayscale canvas processing for better OCR
-  function processImageForOCR(dataUrl) {
-    return new Promise(resolve => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const maxWidth = 800;
-        let scale = 1;
-        if (img.width > maxWidth) {
-          scale = maxWidth / img.width;
-        }
-        canvas.width = img.width * scale;
-        canvas.height = img.height * scale;
-        const ctx = canvas.getContext('2d');
+function saveCard(card) {
+  const cards = JSON.parse(localStorage.getItem('cards') || '[]');
+  cards.push(card);
+  localStorage.setItem('cards', JSON.stringify(cards));
+  renderCards();
+  clearForm();
+}
 
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+function renderCards() {
+  const cards = JSON.parse(localStorage.getItem('cards') || '[]');
+  const list = document.getElementById('cardList');
+  list.innerHTML = '';
+  cards.forEach((c, i) => {
+    const div = document.createElement('div');
+    div.className = 'card';
+    div.innerHTML = `
+      <strong>${c.name}</strong><br>${c.type}<br>${c.condition}<br>$${c.price.toFixed(2)}<br>
+      <a href="${c.ebay}" target="_blank">eBay</a><br>
+      ${c.image ? `<img src="${c.image}" />` : ''}
+      <button onclick="deleteCard(${i})">Delete</button>`;
+    list.appendChild(div);
+  });
+}
 
-        // Grayscale
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const data = imageData.data;
-        for (let i = 0; i < data.length; i += 4) {
-          const avg = (data[i] + data[i+1] + data[i+2]) / 3;
-          data[i] = avg;
-          data[i+1] = avg;
-          data[i+2] = avg;
-        }
-        ctx.putImageData(imageData, 0, 0);
+function deleteCard(index) {
+  const cards = JSON.parse(localStorage.getItem('cards'));
+  cards.splice(index, 1);
+  localStorage.setItem('cards', JSON.stringify(cards));
+  renderCards();
+}
 
-        resolve(canvas.toDataURL());
-      };
-      img.src = dataUrl;
-    });
-  }
+function clearForm() {
+  document.getElementById('folder').value = '';
+  document.getElementById('cardName').value = '';
+  document.getElementById('cardType').value = '';
+  document.getElementById('condition').value = '';
+  document.getElementById('purchasePrice').value = '';
+  document.getElementById('ebaySearch').value = '';
+  document.getElementById('cardImage').value = '';
+  document.getElementById('preview').style.display = 'none';
+  document.getElementById('ocrResultBox').value = '';
+  scannedImage = null;
+}
 
-  function autoFillFromOCR() {
-    const text = ocrResultBox.value;
-    if (!text) {
-      alert("No OCR text to process.");
-      return;
-    }
-    const lines = text.split("\n").map(l => l.trim()).filter(l => l.length > 0);
-    const name = lines.find(line => /[A-Za-z]{2,}/.test(line)) || "";
-    const type = lines.find(line => /NBA|TCG|Pokémon|Yu-Gi-Oh|Panini|Topps/i.test(line)) || "";
-    const condition = lines.find(line => /Mint|Near Mint|Used|Good|PSA/i.test(line)) || "";
-    const priceMatch = lines.join(" ").match(/[$]?(\d+\.\d{2})/);
-    const price = priceMatch ? parseFloat(priceMatch[1]) : '';
-
-    document.getElementById("cardName").value = name;
-    document.getElementById("cardType").value = type;
-    document.getElementById("condition").value = condition;
-    document.getElementById("purchasePrice").value = price;
-    document.getElementById("ebaySearch").value = name + " " + type;
-
-    alert("✅ Fields auto-filled from OCR text. You can edit before saving.");
-  }
-
-  function clearOCR() {
-    ocrResultBox.value = '';
-    previewImg.style.display = 'none';
-  }
-
-  // Initial render
-  renderCards(getCards());
-  renderFilters(getCards());
+renderCards();
 </script>
 </body>
 </html>
